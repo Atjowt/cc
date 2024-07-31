@@ -1,7 +1,7 @@
 # How to use
 
 Simply place the header files in your project!
-Note that before including you must define <NAME>_IMPLEMENTATION in your source file, for example:
+Note that before including you must define \<NAME\>_IMPLEMENTATION in your source file, for example:
 
 ```
 #define STACK_IMPLEMENTATION
