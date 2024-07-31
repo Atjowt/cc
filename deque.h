@@ -31,19 +31,19 @@ void deque_destroy(Deque* deque);
 // void deque_ensure(Deque* deque, size_t size);
 
 // Add `size` bytes of `data` to the front of `deque`.
-void deque_enqueue_front(Deque* deque, size_t size, const void* data);
+void deque_enqueue_front(Deque* deque, size_t size, const void* restrict data);
 
 // Remove `size` bytes from the front of `deque` and move them into `data`.
-void deque_dequeue_front(Deque* deque, size_t size, void* data);
+void deque_dequeue_front(Deque* deque, size_t size, void* restrict data);
 
 // Add `size` bytes of `data` to the back of `deque`.
-void deque_enqueue_back(Deque* deque, size_t size, const void* data);
+void deque_enqueue_back(Deque* deque, size_t size, const void* restrict data);
 
 // Remove `size` bytes from the back of `deque` and move them into `data`.
-void deque_dequeue_back(Deque* deque, size_t size, void* data);
+void deque_dequeue_back(Deque* deque, size_t size, void* restrict data);
 
 // Get `size` bytes starting `offset` bytes from the front of the `deque` and putting them into `data`.
-void deque_get(const Deque* deque, size_t size, size_t offset, void* data);
+void deque_get(const Deque* deque, size_t size, size_t offset, void* restrict data);
 
 #ifdef DEQUE_IMPLEMENTATION
 
@@ -79,81 +79,81 @@ void deque_destroy(Deque* deque) {
 //     deque->data = realloc(deque->data, deque->capacity);
 // }
 
-void deque_enqueue_back(Deque* deque, size_t size, const void* data) {
+void deque_enqueue_back(Deque* deque, size_t size, const void* restrict data) {
     // if (deque->dynamic) { deque_ensure(deque, deque->size + size); }
     if (deque->back + size < deque->capacity) {
-        memmove((uint8_t*)deque->data + deque->back, data, size);
+        memcpy((uint8_t*)deque->data + deque->back, data, size);
         deque->back += size;
     } else {
         size_t right_chunk = deque->back + size - deque->capacity;
         size_t left_chunk = size - right_chunk;
-        memmove((uint8_t*)deque->data + deque->back, data, left_chunk);
+        memcpy((uint8_t*)deque->data + deque->back, data, left_chunk);
         deque->back = 0;
-        memmove((uint8_t*)deque->data + deque->back, (uint8_t*)data + left_chunk, right_chunk);
+        memcpy((uint8_t*)deque->data + deque->back, (uint8_t*)data + left_chunk, right_chunk);
         deque->back += right_chunk;
     }
     deque->size += size;
     deque->count++;
 }
 
-void deque_dequeue_front(Deque* deque, size_t size, void* data) {
+void deque_dequeue_front(Deque* deque, size_t size, void* restrict data) {
     if (deque->front + size < deque->capacity) {
-        memmove(data, (uint8_t*)deque->data + deque->front, size);
+        memcpy(data, (uint8_t*)deque->data + deque->front, size);
         deque->front += size;
     } else {
         size_t right_chunk = deque->front + size - deque->capacity;
         size_t left_chunk = size - right_chunk;
-        memmove(data, (uint8_t*)deque->data + deque->front, left_chunk);
+        memcpy(data, (uint8_t*)deque->data + deque->front, left_chunk);
         deque->front = 0;
-        memmove((uint8_t*)data + left_chunk, (uint8_t*)deque->data + deque->front, right_chunk);
+        memcpy((uint8_t*)data + left_chunk, (uint8_t*)deque->data + deque->front, right_chunk);
         deque->front += right_chunk;
     }
     deque->size -= size;
     deque->count--;
 }
 
-void deque_enqueue_front(Deque* deque, size_t size, const void* data) {
+void deque_enqueue_front(Deque* deque, size_t size, const void* restrict data) {
     // if (deque->dynamic) { deque_ensure(deque, deque->size + size); }
     if (deque->front >= size) {
         deque->front -= size;
-        memmove((uint8_t*)deque->data + deque->front, data, size);
+        memcpy((uint8_t*)deque->data + deque->front, data, size);
     } else {
         size_t left_chunk = size - deque->front;
         size_t right_chunk = size - left_chunk;
         deque->front = 0;
-        memmove((uint8_t*)deque->data + deque->front, (uint8_t*)data + left_chunk, right_chunk);
+        memcpy((uint8_t*)deque->data + deque->front, (uint8_t*)data + left_chunk, right_chunk);
         deque->front = deque->capacity - left_chunk;
-        memmove((uint8_t*)deque->data + deque->front, data, left_chunk);
+        memcpy((uint8_t*)deque->data + deque->front, data, left_chunk);
     }
     deque->size += size;
     deque->count++;
 }
 
-void deque_dequeue_back(Deque* deque, size_t size, void* data) {
+void deque_dequeue_back(Deque* deque, size_t size, void* restrict data) {
     if (deque->back >= size) {
         deque->back -= size;
-        memmove(data, (uint8_t*)deque->data + deque->back, size);
+        memcpy(data, (uint8_t*)deque->data + deque->back, size);
     } else {
         size_t left_chunk = size - deque->back;
         size_t right_chunk = size - left_chunk;
         deque->back = 0;
-        memmove((uint8_t*)data + left_chunk, (uint8_t*)deque->data + deque->front, right_chunk);
+        memcpy((uint8_t*)data + left_chunk, (uint8_t*)deque->data + deque->front, right_chunk);
         deque->back = deque->capacity - left_chunk;
-        memmove(data, (uint8_t*)deque->data + deque->back, left_chunk);
+        memcpy(data, (uint8_t*)deque->data + deque->back, left_chunk);
     }
     deque->size -= size;
     deque->count--;
 }
 
-void deque_get(const Deque* deque, size_t size, size_t offset, void* data) {
+void deque_get(const Deque* deque, size_t size, size_t offset, void* restrict data) {
     size_t start = (deque->front + offset) % deque->capacity;
     if (start + size <= deque->capacity) {
-        memmove(data, (uint8_t*)deque->data + start, size);
+        memcpy(data, (uint8_t*)deque->data + start, size);
     } else {
         size_t left_chunk = deque->capacity - start;
         size_t right_chunk = size - left_chunk;
-        memmove(data, (uint8_t*)deque->data + start, left_chunk);
-        memmove((uint8_t*)data + left_chunk, (uint8_t*)deque->data, right_chunk);
+        memcpy(data, (uint8_t*)deque->data + start, left_chunk);
+        memcpy((uint8_t*)data + left_chunk, (uint8_t*)deque->data, right_chunk);
     }
 }
 
