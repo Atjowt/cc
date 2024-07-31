@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 // TODO: resizing will not work. disabled for now.
+// Idea: copy the data over to the opposite half and move the corresponding pointer to the same relative position
 
 typedef struct Deque {
     void*   data;       // Pointer to the start of data.
