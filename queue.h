@@ -6,8 +6,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-// FIXME: Enqueue/dequeue fail when writing/reading at the end of the buffer. Needs to wrap around in this edge case.
-
 typedef struct Queue {
     void*   data;       // Pointer to the start of data.
     size_t  size;       // Current size of the queue in bytes.
@@ -69,20 +67,32 @@ void queue_enqueue(Queue* queue, size_t size, const void* data) {
     if (queue->dynamic && queue->size + size >= queue->capacity) {
         queue_ensure(queue, queue->size + size);
     }
-    memmove((uint8_t*)queue->data + queue->tail, data, size);
-    queue->tail += size;
-    if (queue->tail >= queue->capacity) {
-        queue->tail -= queue->capacity;
+    if (queue->tail + size < queue->capacity) {
+        memmove((uint8_t*)queue->data + queue->tail, data, size);
+        queue->tail += size;
+    } else {
+        size_t excess_size = queue->tail + size - queue->capacity;
+        size_t base_size = size - excess_size;
+        memmove((uint8_t*)queue->data + queue->tail, data, base_size);
+        queue->tail = 0;
+        memmove((uint8_t*)queue->data + queue->tail, (uint8_t*)data + base_size, excess_size);
+        queue->tail += excess_size;
     }
     queue->size += size;
     queue->count++;
 }
 
 void queue_dequeue(Queue* queue, size_t size, void* data) {
-    memmove(data, (uint8_t*)queue->data + queue->head, size);
-    queue->head += size;
-    if (queue->head >= queue->capacity) {
-        queue->head -= queue->capacity;
+    if (queue->head + size < queue->capacity) {
+        memmove(data, (uint8_t*)queue->data + queue->head, size);
+        queue->head += size;
+    } else {
+        size_t excess_size = queue->head + size - queue->capacity;
+        size_t base_size = size - excess_size;
+        memmove(data, (uint8_t*)queue->data + queue->head, base_size);
+        queue->head = 0;
+        memmove((uint8_t*)data + base_size, (uint8_t*)queue->data + queue->head, excess_size);
+        queue->head += excess_size;
     }
     queue->size -= size;
     queue->count--;
