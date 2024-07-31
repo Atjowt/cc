@@ -51,6 +51,7 @@ void stack_destroy(Stack* stack) {
 }
 
 void stack_ensure(Stack* stack, size_t size) {
+    if (stack->capacity >= size) return;
     while (stack->capacity < size) {
         stack->capacity *= 2;
     }
@@ -58,9 +59,7 @@ void stack_ensure(Stack* stack, size_t size) {
 }
 
 void stack_push(Stack* stack, size_t size, const void* data) {
-    if (stack->dynamic && stack->size + size >= stack->capacity) {
-        stack_ensure(stack, stack->size + size);
-    }
+    if (stack->dynamic) { stack_ensure(stack, stack->size + size); }
     memmove((uint8_t*)stack->data + stack->size, data, size);
     stack->size += size;
     stack->count++;

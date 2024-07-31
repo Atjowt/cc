@@ -10,8 +10,8 @@ typedef struct Queue {
     void*   data;       // Pointer to the start of data.
     size_t  size;       // Current size of the queue in bytes.
     size_t  capacity;   // Total capacity of the queue in bytes.
-    size_t  head;       // Byte offset for the head of the queue.
-    size_t  tail;       // Byte offset for the tail of the queue.
+    size_t  front;      // Byte offset for the front of the queue.
+    size_t  back;       // Byte offset for the back of the queue.
     size_t  count;      // Number of items in the queue, +1 per enqueue and -1 per dequeue.
     bool    dynamic;    // Whether the queue will dynamically reallocate to ensure enough capacity.
 } Queue;
@@ -25,10 +25,10 @@ void queue_destroy(Queue* queue);
 // Ensure `queue` has at least `size` bytes of capacity.
 void queue_ensure(Queue* queue, size_t size);
 
-// Add `size` bytes of `data` to the tail of `queue`.
+// Add `size` bytes of `data` to the back of `queue`.
 void queue_enqueue(Queue* queue, size_t size, const void* data);
 
-// Remove `size` bytes from the head of `queue` and move them into `data`.
+// Remove `size` bytes from the front of `queue` and move them into `data`.
 void queue_dequeue(Queue* queue, size_t size, void* data);
 
 #ifdef QUEUE_IMPLEMENTATION
@@ -40,8 +40,8 @@ Queue queue_create(size_t capacity, bool dynamic) {
         .dynamic = dynamic,
         .count = 0,
         .size = 0,
-        .head = 0,
-        .tail = 0,
+        .front = 0,
+        .back = 0,
     };
 }
 
@@ -52,11 +52,12 @@ void queue_destroy(Queue* queue) {
     queue->capacity = 0;
     queue->size = 0;
     queue->count = 0;
-    queue->head = 0;
-    queue->tail = 0;
+    queue->front = 0;
+    queue->back = 0;
 }
 
 void queue_ensure(Queue* queue, size_t size) {
+    if (queue->capacity >= size) return;
     while (queue->capacity < size) {
         queue->capacity *= 2;
     }
@@ -64,35 +65,33 @@ void queue_ensure(Queue* queue, size_t size) {
 }
 
 void queue_enqueue(Queue* queue, size_t size, const void* data) {
-    if (queue->dynamic && queue->size + size >= queue->capacity) {
-        queue_ensure(queue, queue->size + size);
-    }
-    if (queue->tail + size < queue->capacity) {
-        memmove((uint8_t*)queue->data + queue->tail, data, size);
-        queue->tail += size;
+    if (queue->dynamic) { queue_ensure(queue, queue->size + size); }
+    if (queue->back + size <= queue->capacity) {
+        memmove((uint8_t*)queue->data + queue->back, data, size);
+        queue->back += size;
     } else {
-        size_t excess_size = queue->tail + size - queue->capacity;
-        size_t base_size = size - excess_size;
-        memmove((uint8_t*)queue->data + queue->tail, data, base_size);
-        queue->tail = 0;
-        memmove((uint8_t*)queue->data + queue->tail, (uint8_t*)data + base_size, excess_size);
-        queue->tail += excess_size;
+        size_t right_chunk = queue->back + size - queue->capacity;
+        size_t left_chunk = size - right_chunk;
+        memmove((uint8_t*)queue->data + queue->back, data, left_chunk);
+        queue->back = 0;
+        memmove((uint8_t*)queue->data + queue->back, (uint8_t*)data + left_chunk, right_chunk);
+        queue->back += right_chunk;
     }
     queue->size += size;
     queue->count++;
 }
 
 void queue_dequeue(Queue* queue, size_t size, void* data) {
-    if (queue->head + size < queue->capacity) {
-        memmove(data, (uint8_t*)queue->data + queue->head, size);
-        queue->head += size;
+    if (queue->front + size <= queue->capacity) {
+        memmove(data, (uint8_t*)queue->data + queue->front, size);
+        queue->front += size;
     } else {
-        size_t excess_size = queue->head + size - queue->capacity;
-        size_t base_size = size - excess_size;
-        memmove(data, (uint8_t*)queue->data + queue->head, base_size);
-        queue->head = 0;
-        memmove((uint8_t*)data + base_size, (uint8_t*)queue->data + queue->head, excess_size);
-        queue->head += excess_size;
+        size_t right_chunk = queue->front + size - queue->capacity;
+        size_t left_chunk = size - right_chunk;
+        memmove(data, (uint8_t*)queue->data + queue->front, left_chunk);
+        queue->front = 0;
+        memmove((uint8_t*)data + left_chunk, (uint8_t*)queue->data + queue->front, right_chunk);
+        queue->front += right_chunk;
     }
     queue->size -= size;
     queue->count--;
