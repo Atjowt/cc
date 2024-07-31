@@ -9,7 +9,7 @@
 typedef struct Stack {
     void*   data;       // Pointer to the start of data.
     size_t  size;       // Current size of the stack in bytes.
-    size_t  capacity;   // Total capacity of the queue in bytes.
+    size_t  capacity;   // Total capacity of the stack in bytes.
     size_t  count;      // Number of items in the stack, +1 per push and -1 per pop. 
     bool    dynamic;    // Whether the stack will dynamically reallocate to ensure enough capacity.
 } Stack;
