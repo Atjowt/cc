@@ -23,11 +23,11 @@ void stack_destroy(Stack* stack);
 // Ensure `stack` has at least `size` bytes of capacity.
 void stack_ensure(Stack* stack, size_t size);
 
-// Add `size` bytes of `data` to the top of `stack`.
-void stack_push(Stack* stack, size_t size, const void* data);
+// Add `size` bytes of `data` to the top of the `stack`.
+void stack_push(Stack* stack, size_t size, const void* restrict data);
 
-// Remove `size` bytes from the top of `stack` and move them into `data`.
-void stack_pop(Stack* stack, size_t size, void* data);
+// Remove `size` bytes from the top of the `stack` and move them into `data`.
+void stack_pop(Stack* stack, size_t size, void* restrict data);
 
 #ifdef STACK_IMPLEMENTATION
 
@@ -58,16 +58,16 @@ void stack_ensure(Stack* stack, size_t size) {
     stack->data = realloc(stack->data, stack->capacity);
 }
 
-void stack_push(Stack* stack, size_t size, const void* data) {
+void stack_push(Stack* stack, size_t size, const void* restrict data) {
     if (stack->dynamic) { stack_ensure(stack, stack->size + size); }
-    memmove((uint8_t*)stack->data + stack->size, data, size);
+    memcpy((uint8_t*)stack->data + stack->size, data, size);
     stack->size += size;
     stack->count++;
 }
 
-void stack_pop(Stack* stack, size_t size, void* data) {
+void stack_pop(Stack* stack, size_t size, void* restrict data) {
     stack->size -= size;
-    memmove(data, (uint8_t*)stack->data + stack->size, size);
+    memcpy(data, (uint8_t*)stack->data + stack->size, size);
     stack->count--;
 }
 
