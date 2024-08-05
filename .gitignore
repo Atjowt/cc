@@ -1,6 +1,2 @@
-*
-!.gitignore
-!README.md
-!stack.h
-!queue.h
-!deque.h
+.vscode
+build
